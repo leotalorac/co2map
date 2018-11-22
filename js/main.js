@@ -103,19 +103,19 @@ function putCircleOnMap(data,key){
 function putDataOnTable(data,city){
     // put the table structure
     //main div
-    console.log(city)
-    console.log($("#tableWrapper").length >0)
+    // console.log(city)
+    // console.log($("#tableWrapper").length >0)
     
     // div = document.getElementById("divmenu");
     // div.innerHTML += '<div id="tableWrapper"><div class="table-wrapper-scroll-y"><table class="table table-bordered table-striped"><thead class="thead-dark"><tr><th colspan="2"> Total carbon dioxide emissions from all sectors, all fuels. </th>	</tr><tr><th> Year </th><th> Emission (million metric tons CO2) </th></tr></thead><tbody id="mainTableBody"></tbody></table></div></div>';
     if($("#tableWrapper").length > 0){
-        console.log("if")
+        // console.log("if")
         $("#titletable").text("Total carbon dioxide emissions on " + city)
         const tableBody = $('#mainTableBody')[0];
         tableBody.innerHTML =""
         var newRow, year, amount;	
         for(var item of data){
-            console.log(item)
+            // console.log(item)
             newRow = tableBody.insertRow(tableBody.rows.length);
             year = newRow.insertCell(0);
             amount = newRow.insertCell(1);
@@ -127,7 +127,7 @@ function putDataOnTable(data,city){
         const tableBody = $('#mainTableBody')[0];
         var newRow, year, amount;	
         for(var item of data){
-            console.log(item)
+            // console.log(item)
             newRow = tableBody.insertRow(tableBody.rows.length);
             year = newRow.insertCell(0);
             amount = newRow.insertCell(1);
@@ -201,7 +201,7 @@ function initMap(){
 
 //move the map
 function movemap(coo,c){
-    console.log(coo)
+    // console.log(coo)
     deleteMarkers();
     let myLatLng = {lat: coo['lat'],lng: (coo['lng']-5)};
     let marklatlng = {lat: coo['lat'],lng: coo['lng']}
@@ -223,7 +223,7 @@ function resetmap(){
 function putCircles(year){
     let data = {};
     keysarray.forEach((v,i,a) => {
-        console.log(v);
+        // console.log(v);
         data[v] = getDataFromYear(DATA_QUERY,year,v);
     });
 }
@@ -287,7 +287,7 @@ $("#slccountry").change(() => {
         }
         fillYears();
         $("#slcyear").change(() =>{
-            console.log("change year")
+            // console.log("change year")
             let valkey = $("#slcyear").find(":selected").val();
             deleteCircles();
             putCircles(valkey);
@@ -309,12 +309,12 @@ $("#slccountry").change(() => {
 //add the graph
 function addGraph(dataf){
     // let w = #
-    console.log($("#graphicmenu").length)
+    // console.log($("#graphicmenu").length)
     if(!($("#graphicmenu").length>0 )){
         let gdiv = $("<div>",{class:"graphic",id:"graphicmenu"});
         $("#divmenu").append(gdiv);
     }else{
-        console.log("else")
+        // console.log("else")
         $("svg").remove()
     }
     
@@ -354,8 +354,8 @@ function addGraph(dataf){
     });
     dataobject = dataobject.reverse();
     // console.log(data[0])
-    console.log(dataf)
-    console.log(dataobject)
+    // console.log(dataf)
+    // console.log(dataobject)
     // Scale the range of the data in the domains
     x.domain(dataobject.map(function(d) { return d.year; }));
     y.domain([0, d3.max(dataobject, function(d) { return d.co; })]);
