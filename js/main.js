@@ -1,7 +1,8 @@
 // global variable map
 let map;
 let markers =[];
-
+let circles =[];
+let mainmenudiv = $("#divmenu")
 // CO2 api
 const DATASET_QUERY_FORMAT = "http://api.eia.gov/series/?api_key=707c8ecbdbd34cbb75272c7a4256ca6b&series_id=EMISS.CO2-TOTV-TT-TO-MD.A";
 const DATA_QUERY = "http://api.eia.gov/series/?api_key=707c8ecbdbd34cbb75272c7a4256ca6b&series_id="
@@ -59,12 +60,45 @@ const DATASETS_API_SERIES_ID = {
     "EMISS.CO2-TOTV-TT-TO-WI.A" : ["Wisconsin", {lat: 44.268543, lng: -89.616508}],
     "EMISS.CO2-TOTV-TT-TO-WY.A" : ["Wyoming", {lat: 42.755966, lng: -107.302490}]
 }
+let keysarray = Object.keys(DATASETS_API_SERIES_ID);
 //funtion to get data from the api
 function getData(url,key) {
-    let newurl = url+key;
-    let response = $.get(newurl,() =>{
-        putDataOnTable(response.responseJSON.series[0].data,DATASETS_API_SERIES_ID[key][0]);
+        let newurl = url+key;
+        let response = $.get(newurl,() =>{
+            putDataOnTable(response.responseJSON.series[0].data,DATASETS_API_SERIES_ID[key][0]);
+        });    
+}
+function getYears(url,slc){
+    let y = [];
+    let response = $.get(url,() =>{
+        response.responseJSON.series[0].data.forEach(function (i,value,a){
+            slc.append(new Option(i[0],i[0]));
+        });
     });
+}
+function getDataFromYear(url,year,key){
+    let newurl = url+key;
+    let num = 2014-parseInt(year);
+    let co;
+    let response = $.get(newurl,() =>{
+        putCircleOnMap(response.responseJSON.series[0].data[num][1],key);
+    });    
+}
+
+function putCircleOnMap(data,key){
+    let latlong = DATASETS_API_SERIES_ID[key][1],
+    radius = data*1000;
+    var cityCircle = new google.maps.Circle({
+        strokeColor: '#4C46FF',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: '#4C46FF',
+        fillOpacity: 0.35,
+        map: map,
+        center: latlong,
+        radius: radius
+    });
+    circles.push(cityCircle);
 }
 function putDataOnTable(data,city){
     // put the table structure
@@ -100,6 +134,9 @@ function putDataOnTable(data,city){
             year.innerHTML = item[0];
             amount.innerHTML = item[1];
         }
+    }
+    if($("slcyear").length > 0){
+        
     }
 
     addGraph(data);
@@ -139,13 +176,29 @@ $(document).ready(function(){
 
 //init the map
 function initMap(){
+    let mapStyle = [{
+        'stylers': [{'visibility': 'off'}]
+      }, {
+        'featureType': 'landscape',
+        'elementType': 'geometry',
+        'stylers': [{'visibility': 'on'}, {'color': '#fcfcfc'}]
+      }, {
+        'featureType': 'water',
+        'elementType': 'geometry',
+        'stylers': [{'visibility': 'on'}, {'color': '#bfd4ff'}]
+      }];
     map = new google.maps.Map(document.getElementById("map"),{
         //center on the us
-        center: {lat: 41.850033, lng:-87.6500523},
+        center: {lat: 40, lng: -100},
+        // center: {lat: 41.850033, lng:-87.6500523},
         //show the country
-        zoom: 3
+        zoom: 4,
+        // styles:mapStyle
     });
 }
+
+// put the circles on the map
+
 //move the map
 function movemap(coo,c){
     console.log(coo)
@@ -157,6 +210,28 @@ function movemap(coo,c){
     map.panTo(center);
     addMarker(marklatlng);
     map.setZoom(6)
+}
+//put the map on zoom again
+function resetmap(){
+    let myLatLng = {lat: 40, lng: -110}
+    var center = new google.maps.LatLng(myLatLng);
+    map.panTo(center);
+    map.setZoom(4);
+    deleteMarkers();
+}
+//put the circles
+function putCircles(year){
+    let data = {};
+    keysarray.forEach((v,i,a) => {
+        console.log(v);
+        data[v] = getDataFromYear(DATA_QUERY,year,v);
+    });
+}
+//remove circles
+function deleteCircles(){
+    for (var i = 0; i < circles.length; i++) {
+        circles[i].setMap(null);
+      }
 }
 // Adds a marker to the map and push to the array.
 function addMarker(location) {
@@ -174,7 +249,6 @@ function setMapOnAll(map) {
 // Removes the markers from the map, but keeps them in the array.
 function clearMarkers() {
     setMapOnAll(null);
-
 }
 // Deletes all markers in the array by removing references to them.
 function deleteMarkers() {
@@ -191,17 +265,45 @@ function fillselect(){
         select.append(new Option(cityname,i));
     });
 };
+// fill the years
+function fillYears(){
+    let select = $("#slcyear")
+    getYears(DATASET_QUERY_FORMAT,select);
+}
 // on change the select 
 $("#slccountry").change(() => {
     let valkey = $("#slccountry").find(":selected").val();
-    let coords = DATASETS_API_SERIES_ID[valkey][1];
-    let city = DATASETS_API_SERIES_ID[valkey][0];
-    
-    getData(DATA_QUERY,valkey);
-    movemap(coords);
-    
+    if(valkey =="All"){
+        resetmap();
+        let div = $("#tableWrapper");
+        div.remove();
+        div = $("#graphicmenu");
+        div.remove();
+        if($("#slcyear").length == 0){
+            let select = $("<select>", {id: "slcyear", "class": "custom-select custom-select-lg mb-30",name:"year-selector"});
+            let o = $("<option>",{value:"Year",text:"Year"})
+            select.append(o)
+            mainmenudiv.append(select);
+        }
+        fillYears();
+        $("#slcyear").change(() =>{
+            console.log("change year")
+            let valkey = $("#slcyear").find(":selected").val();
+            deleteCircles();
+            putCircles(valkey);
+        })
+    }else{
+        let ys = $("#slcyear");
+        ys.remove();
+        let coords = DATASETS_API_SERIES_ID[valkey][1];
+        let city = DATASETS_API_SERIES_ID[valkey][0];
+        getData(DATA_QUERY,valkey);
+        movemap(coords);
+    }
     
 })
+
+
 
 
 //add the graph
@@ -219,14 +321,14 @@ function addGraph(dataf){
     let w = $("#graphicmenu").width();
     let h = $("#tableWrapper").height()+100;
     // set the dimensions and margins of the graph
-    var margin = {top: 20, right: 20, bottom: 50, left: 40},
+    var margin = {top: 20, right: 20, bottom: 50, left: 25},
     width = w - margin.left - margin.right,
     height = h - margin.top - margin.bottom;
 
     // set the ranges
     var x = d3.scaleBand()
         .range([0, width])
-        .padding(0.1);
+        .padding(0.2);
     var y = d3.scaleLinear()
         .range([height, 0]);
         
